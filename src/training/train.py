@@ -26,6 +26,9 @@ def main():
     train_ds = InstructionDataset(train_data, tokenizer, cfg.max_len)
     eval_ds = InstructionDataset(eval_data, tokenizer, cfg.max_len)
 
+    watchdog = TrainingWatchdog(timeout=900)  # 15 分钟
+    watchdog.start()
+
     args = TrainingArguments(
         output_dir=cfg.output_dir,
         per_device_train_batch_size=cfg.per_device_train_batch_size,
@@ -48,11 +51,9 @@ def main():
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         tokenizer=tokenizer,
-        callbacks=[NaNLossCallback()]
+        callbacks=[NaNLossCallback(), WatchdogCallback(watchdog)]
     )
-
-    watchdog = TrainingWatchdog(timeout=900)  # 15 分钟
-    watchdog.start()
+                                   
 
     try:
         trainer.train(resume_from_checkpoint=cfg.resume_from)
@@ -60,6 +61,8 @@ def main():
         handled = handle_oom(e)
         if not handled:
             raise e
+    finally:
+        watchdog.stop()
 
 if __name__ == "__main__":
     main()
