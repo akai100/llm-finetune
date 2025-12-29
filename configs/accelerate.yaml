@@ -1,0 +1,8 @@
+compute_environment: LOCAL_MACHINE
+distributed_type: MULTI_GPU
+num_processes: 8
+mixed_precision: bf16
+
+deepspeed_config:
+  zero_stage: 2
+  gradient_accumulation_steps: 8
