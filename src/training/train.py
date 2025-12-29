@@ -52,9 +52,8 @@ def main():
     try:
         trainer.train(resume_from_checkpoint=cfg.resume_from)
     except RuntimeError as e:
-        if "out of memory" in str(e):
-            print("OOM detected, exiting safely")
-        else:
+        handled = handle_oom(e)
+        if not handled:
             raise e
 
 if __name__ == "__main__":
