@@ -1,21 +1,28 @@
+import torch
 from torch.utils.data import Dataset
 
 class InstructionDataset(Dataset):
-  def __init__(self, data, tokenizer, max_len):
-    self.data = data
-    self.tokenizer = tokenizer
-    self.max_len = max_len
+    def __init__(self, data, tokenizer, max_len):
+        self.data = data
+        self.tokenizer = tokenizer
+        self.max_len = max_len
 
-def _getitem__(self, idx):
-  item = self.data[idx]
-  tokens = self.tokenizer(
-    item["text"],
-    truncation=True,
-    max_length=self.max_len
-  )
-  tokens["labels"] = tokens["input_ids"].copy()
-  return tokens
+    def __len__(self):
+        return len(self.data)
 
-def __len__(self):
+    def __getitem__(self, idx):
+        text = self.data[idx]["text"]
+        enc = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=self.max_len,
+            return_tensors="pt"
+        )
+        input_ids = enc["input_ids"][0]
+        labels = input_ids.clone()
 
-  return len(self.data)
+        return {
+            "input_ids": input_ids,
+            "attention_mask": enc["attention_mask"][0],
+            "labels": labels
+        }
