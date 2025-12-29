@@ -1,13 +1,15 @@
+import torch
 from transformers import GenerationConfig
 
-gen_cfg = GenerationConfig(
-    max_new_tokens=256,
-    temperature=0.7,
-    top_p=0.9,
-    do_sample=True
-)
+def batch_generate(model, tokenizer, texts, gen_cfg):
+    inputs = tokenizer(
+        texts,
+        return_tensors="pt",
+        padding=True
+    ).to(model.device)
 
-outputs = model.generate(
-    input_ids,
-    generation_config=gen_cfg
-)
+    outputs = model.generate(
+        **inputs,
+        generation_config=gen_cfg
+    )
+    return tokenizer.batch_decode(outputs, skip_special_tokens=True)
