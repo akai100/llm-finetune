@@ -46,7 +46,8 @@ def main():
         args=args,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        tokenizer=tokenizer
+        tokenizer=tokenizer,
+        callbacks=[NaNLossCallback()]
     )
 
     try:
