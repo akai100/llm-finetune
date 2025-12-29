@@ -1,31 +1,30 @@
-from accelerate import Accelerator
-from transformers import Trainer, TrainingArguments
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import LoraConfig, get_peft_model
 
-def main():
-    accelerator = Accelerator()
+def load_model(cfg):
+    tokenizer = AutoTokenizer.from_pretrained(
+        cfg.model_name,
+        use_fast=True,
+        trust_remote_code=True
+    )
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
-    model, tokenizer = load_model(cfg)
-    train_ds = build_dataset()
-
-    training_args = TrainingArguments(
-        output_dir=cfg.output_dir,
-        per_device_train_batch_size=cfg.bs,
-        gradient_accumulation_steps=cfg.grad_acc,
-        fp16=cfg.fp16,
-        logging_steps=10,
-        save_steps=500,
-        report_to="none"
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg.model_name,
+        torch_dtype=torch.bfloat16 if cfg.bf16 else torch.float16
     )
 
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_ds,
-        tokenizer=tokenizer
-    )
+    if cfg.use_lora:
+        lora_cfg = LoraConfig(
+            r=cfg.lora_r,
+            lora_alpha=cfg.lora_alpha,
+            target_modules=cfg.target_modules,
+            lora_dropout=cfg.lora_dropout,
+            task_type="CAUSAL_LM"
+        )
+        model = get_peft_model(model, lora_cfg)
+        model.print_trainable_parameters()
 
-    trainer.train()
-
-if __name__ == "__main__":
-    main()
-
+    return model, tokenizer
