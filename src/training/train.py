@@ -6,6 +6,7 @@ from src.models.load_model import load_model
 from data.dataset import InstructionDataset
 from src.utils.config import Config
 from data.preprocess import preprocess_dataset, train_eval_split
+from src.training.watchdog import TrainingWatchdog
 
 def main():
     cfg = Config([
@@ -49,6 +50,9 @@ def main():
         tokenizer=tokenizer,
         callbacks=[NaNLossCallback()]
     )
+
+    watchdog = TrainingWatchdog(timeout=900)  # 15 分钟
+    watchdog.start()
 
     try:
         trainer.train(resume_from_checkpoint=cfg.resume_from)
