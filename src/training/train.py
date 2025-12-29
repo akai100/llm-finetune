@@ -1,30 +1,61 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model
+from transformers import Trainer, TrainingArguments
+from accelerate import Accelerator
 
-def load_model(cfg):
-    tokenizer = AutoTokenizer.from_pretrained(
-        cfg.model_name,
-        use_fast=True,
-        trust_remote_code=True
+from src.models.load_model import load_model
+from data.dataset import InstructionDataset
+from src.utils.config import Config
+from data.preprocess import preprocess_dataset, train_eval_split
+
+def main():
+    cfg = Config([
+        "configs/model.yaml",
+        "configs/train.yaml",
+        "configs/lora.yaml"
+    ])
+    cfg.override_from_cli()
+
+    accelerator = Accelerator()
+
+    model, tokenizer = load_model(cfg)
+
+    raw_data = preprocess_dataset(cfg.train_file)
+    train_data, eval_data = train_eval_split(raw_data)
+
+    train_ds = InstructionDataset(train_data, tokenizer, cfg.max_len)
+    eval_ds = InstructionDataset(eval_data, tokenizer, cfg.max_len)
+
+    args = TrainingArguments(
+        output_dir=cfg.output_dir,
+        per_device_train_batch_size=cfg.per_device_train_batch_size,
+        gradient_accumulation_steps=cfg.gradient_accumulation_steps,
+        learning_rate=cfg.learning_rate,
+        num_train_epochs=cfg.num_train_epochs,
+        fp16=cfg.fp16,
+        bf16=cfg.bf16,
+        logging_steps=cfg.logging_steps,
+        save_steps=cfg.save_steps,
+        evaluation_strategy="steps",
+        eval_steps=cfg.eval_steps,
+        save_total_limit=2,
+        report_to="none"
     )
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
 
-    model = AutoModelForCausalLM.from_pretrained(
-        cfg.model_name,
-        torch_dtype=torch.bfloat16 if cfg.bf16 else torch.float16
+    trainer = Trainer(
+        model=model,
+        args=args,
+        train_dataset=train_ds,
+        eval_dataset=eval_ds,
+        tokenizer=tokenizer
     )
 
-    if cfg.use_lora:
-        lora_cfg = LoraConfig(
-            r=cfg.lora_r,
-            lora_alpha=cfg.lora_alpha,
-            target_modules=cfg.target_modules,
-            lora_dropout=cfg.lora_dropout,
-            task_type="CAUSAL_LM"
-        )
-        model = get_peft_model(model, lora_cfg)
-        model.print_trainable_parameters()
+    try:
+        trainer.train(resume_from_checkpoint=cfg.resume_from)
+    except RuntimeError as e:
+        if "out of memory" in str(e):
+            print("OOM detected, exiting safely")
+        else:
+            raise e
 
-    return model, tokenizer
+if __name__ == "__main__":
+    main()
