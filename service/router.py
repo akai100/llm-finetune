@@ -9,7 +9,7 @@ router = APIRouter()
 async def chat(req: dict):
     gpu = gpu_router.select_gpu()
     if gpu is None:
-        raise HTTPException(status_code=503, detail="All GPUs busy")
+        raise HTTPException(status_code=503, detail="No GPU avaliable")
 
     loop = asyncio.get_event_loop()
     future = loop.create_future()
