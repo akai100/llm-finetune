@@ -7,23 +7,25 @@ router = APIRouter()
 
 @router.post("/chat")
 async def chat(req: dict):
-    gpu = gpu_router.select_gpu()
+    session_id = req["session_id"]
+    query = req["query"]
+
+    session = session_mgr.get(session_id)
+    
+    gpu = gpu_router.select_gpu_for_session(session)
+    
     if gpu is None:
         raise HTTPException(status_code=503, detail="No GPU avaliable")
 
-    loop = asyncio.get_event_loop()
-    future = loop.create_future()
+    if session is None:
+        session = session_mgr.create(session_id, gpu.gpu_id)
 
-    inf_req = InferenceRequest(
-        prompt=req["query"],
+    worker = workers[gpu.gpu_id]
+
+    answer = await worker.generate_with_cache(
+        prompt=query,
         gen_cfg={},
-        future=future
+        session_state=session
     )
 
-    await queues[gpu.gpu_id].put(inf_req)
-
-    try:
-        result = await asyncio.wait_for(future, timeout=60)
-        return {"answer": result}
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Inference timeout")
+    return {"answer": answer}
