@@ -1,1 +1,96 @@
+# =========================
+# Base Model Configuration
+# =========================
+
+model:
+  name_or_path: Qwen/Qwen2.5-7B-Instruct
+  model_type: causal_lm
+  trust_remote_code: true
+
+  # -------- 权重加载 --------
+  torch_dtype: bfloat16        # 线上优先 bf16
+  device_map: auto             # 交给 accelerate
+  low_cpu_mem_usage: true
+
+  # -------- Flash Attention --------
+  attn_implementation: flash_attention_2
+
+  # -------- Tokenizer --------
+  tokenizer:
+    use_fast: true
+    padding_side: left         # 推理必须 left padding
+    truncation_side: left
+    model_max_length: 4096
+
+# =========================
+# LoRA / PEFT Configuration
+# =========================
+
+peft:
+  enabled: true
+  peft_type: lora
+  task_type: CAUSAL_LM
+
+  # -------- LoRA 参数（稳态）--------
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+
+  # -------- 注入位置 --------
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+  bias: none
+
+  # -------- 训练技巧 --------
+  modules_to_save:
+    - lm_head
+    - embed_tokens
+
+# =========================
+# Quantization (可选)
+# =========================
+
+quantization:
+  enabled: false
+  load_in_4bit: false
+  load_in_8bit: false
+
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_quant_type: nf4
+
+# =========================
+# Gradient Checkpointing
+# =========================
+
+gradient_checkpointing:
+  enabled: true
+  use_reentrant: false         # 避免 CUDA hang
+
+# =========================
+# Runtime Safety
+# =========================
+
+runtime:
+  max_position_embeddings: 4096
+  enable_kv_cache: true
+
+  # OOM & NaN 防护
+  allow_tf32: true
+  detect_anomaly: false
+
+# =========================
+# Export / Merge
+# =========================
+
+export:
+  merge_lora_on_save: false    # 线上通常不 merge
+  safe_serialization: true
 
