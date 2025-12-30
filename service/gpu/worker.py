@@ -14,6 +14,34 @@ class GPUWorker:
             max_wait_ms=20
         )
 
+    async def generate_with_cache(
+        self,
+        prompt,
+        gen_cfg,
+        session_state
+    ):
+        torch.cuda.set_device(self.gpu_state.gpu_id)
+
+        inputs = self.model.tokenizer(
+            prompt,
+            return_tensors="pt"
+        ).to("cuda")
+
+        outputs = await asyncio.to_thread(
+            self.model.model.generate,
+            **inputs,
+            past_key_values=session_state.past_key_values,
+            use_cache=True,
+            **gen_cfg
+        )
+
+        session_state.past_key_values = outputs.past_key_values
+
+        return self.model.tokenizer.decode(
+            outputs.sequences[0],
+            skip_special_tokens=True
+        )
+
     async def run(self, queue):
         torch.cuda.set_device(self.gpu_state.gpu_id)
 
