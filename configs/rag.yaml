@@ -1,1 +1,69 @@
+# =========================
+# RAG Global Switch
+# =========================
+
+rag:
+  enabled: true
+
+# =========================
+# Document Source
+# =========================
+
+documents:
+  source_type: local            # local | oss | s3 | http
+  path: data/rag_corpus/
+  file_types:
+    - txt
+    - md
+    - jsonl
+
+  # 文档最大长度（防止 embedding OOM）
+  max_document_chars: 8000
+  drop_overlong: true
+
+# =========================
+# Chunking Strategy
+# =========================
+
+chunking:
+  strategy: recursive           # recursive | fixed
+  chunk_size: 512               # token 级 chunk
+  chunk_overlap: 64
+
+  # 中文优化
+  separators:
+    - "\n\n"
+    - "\n"
+    - "。"
+    - "；"
+
+# =========================
+# Embedding Model
+# =========================
+
+embedding:
+  model_name: bge-large-zh-v1.5
+  device: cuda
+  normalize: true
+  batch_size: 32
+  max_length: 512
+
+# =========================
+# Vector Store
+# =========================
+
+vector_store:
+  type: faiss                   # faiss | milvus | chroma
+  index_type: ivf_flat          # flat | ivf_flat | hnsw
+  nlist: 1024                   # IVF 聚类数
+  metric: cosine
+  persist_path: data/vector_db/
+
+# =========================
+# Retrieval Strategy
+# =========================
+
+retrieval:
+  top_k: 5                      # 第一阶段召回
+  score_threshold: 0.3          # 低于直接丢_
 
