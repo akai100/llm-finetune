@@ -24,6 +24,25 @@ class GPURouter:
         self.gamma = gamma
         self.min_free_ratio = min_free_ratio
 
+    def select_best_gpu(self):
+        candidates = []
+        for gpu in self.gpu_states:
+            if not gpu.healthy:
+                continue
+
+            free, total = gpu.refresh_memory()
+            if free / total < self.min_free_ratio:
+                continue
+
+            score = free / total - gpu.active
+            candidates.append((score, gpu))
+
+        if not candidates:
+            return None
+
+        candidates.sort(reverse=True, key=lambda x: x[0])
+        return candidates[0][1]
+
     def select_gpu_for_session(self, session_state):
         # 已有 session：固定 GPU
         if session_state:
