@@ -9,26 +9,42 @@ class GPUWorker:
         self.gpu_state = gpu_state
         self.model = model_service
         self.sem = semaphore
+        self.batcher = DynamicBatcher(
+            max_batch_size=8,
+            max_wait_ms=20
+        )
 
     async def run(self, queue):
         torch.cuda.set_device(self.gpu_state.gpu_id)
 
         while True:
-            req = await queue.get()
+            batch = await self.batcher.collect(queue)
+            if not batch:
+                continue
+            
             await self.sem.acquire()
             self.gpu_state.on_start()
 
             try:
-                result = await asyncio.to_thread(
-                    self.model.generate,
-                    req.prompt,
-                    req.gen_cfg
+                prompts = [r.prompt for r in batch]
+                gen_cfg = batch[0].gen_cfg  # 简化：batch 内共享
+
+                outputs = await asyncio.to_thread(
+                    self.model.generate_batch,
+                    prompts,
+                    gen_cfg
                 )
-                req.future.set_result(result)
-            except Exception as e:
-                logger.exception(e)
-                req.future.set_exception(e)
+
+                for r, out in zip(batch, outputs):
+                    r.future.set_result(out)
+
+            except RuntimeError as e:
+                if "out of memory" in str(e):
+                    self.gpu_state.mark_unhealthy()
+                for r in batch:
+                    r.future.set_exception(e)
             finally:
                 self.gpu_state.on_finish()
                 self.sem.release()
-                queue.queue.task_done()
+                for _ in batch:
+                    queue.task_done()
