@@ -14,3 +14,21 @@ class ModelService:
         inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
         outputs = self.model.generate(**inputs, **gen_cfg)
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    def generate_batch(self, prompts, gen_cfg):
+        inputs = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True
+        ).to("cuda")
+
+        outputs = self.model.generate(
+            **inputs,
+            **gen_cfg
+        )
+
+        return self.tokenizer.batch_decode(
+            outputs,
+            skip_special_tokens=True
+        )
