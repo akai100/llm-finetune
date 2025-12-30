@@ -1,3 +1,13 @@
+"""
+| 参数             | 推荐        |
+| -------------- | --------- |
+| min_free_ratio | 0.1 ~ 0.2 |
+| alpha          | 1.0       |
+| beta           | 0.5       |
+| gamma          | 0.2       |
+| max_concurrent | 单卡 1      |
+"""
+
 import random
 from service.gpu.state import GPUState
 
