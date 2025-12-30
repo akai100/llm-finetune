@@ -24,6 +24,14 @@ class GPURouter:
         self.gamma = gamma
         self.min_free_ratio = min_free_ratio
 
+    def select_gpu_for_session(self, session_state):
+        # 已有 session：固定 GPU
+        if session_state:
+            return self.gpu_states[session_state.gpu_id]
+
+        # 新 session：走显存感知策略
+        return self.select_best_gpu()
+
     def score(self, gpu, queue_length):
         free, total = gpu.refresh_memory()
         free_ratio = free / total
