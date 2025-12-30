@@ -77,11 +77,11 @@ class GPUWorker:
                     r.future.set_result(out)
 
             except RuntimeError as e:
-                if "out of memory" in str(e):
-                    self.gpu_state.mark_unhealthy()
-                for r in batch:
-                    r.future.set_exception(e)
+                self.gpu_state.mark_unhealthy()
+                for req in batch:
+                    req.future.set_exception(e)
             finally:
+                self.watchdog.stop()
                 self.gpu_state.on_finish()
                 self.sem.release()
                 for _ in batch:
