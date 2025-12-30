@@ -1,6 +1,7 @@
 import asyncio
 import torch
 import logging
+from service.gpu.inference_watchdog import InferenceWatchdog
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ class GPUWorker:
             max_batch_size=8,
             max_wait_ms=20
         )
+        self.watchdog = InferenceWatchdog(timeout_sec=60)
 
     async def generate_with_cache(
         self,
@@ -22,25 +24,33 @@ class GPUWorker:
     ):
         torch.cuda.set_device(self.gpu_state.gpu_id)
 
-        inputs = self.model.tokenizer(
-            prompt,
-            return_tensors="pt"
-        ).to("cuda")
-
-        outputs = await asyncio.to_thread(
-            self.model.model.generate,
-            **inputs,
-            past_key_values=session_state.past_key_values,
-            use_cache=True,
-            **gen_cfg
+         self.watchdog.start(
+            gpu_id=self.gpu_state.gpu_id,
+            session_id=session_state.session_id
         )
 
-        session_state.past_key_values = outputs.past_key_values
-
-        return self.model.tokenizer.decode(
-            outputs.sequences[0],
-            skip_special_tokens=True
-        )
+        try:
+            inputs = self.model.tokenizer(
+                prompt,
+                return_tensors="pt"
+            ).to("cuda")
+            
+            outputs = await asyncio.to_thread(
+                self.model.model.generate,
+                **inputs,
+                past_key_values=session_state.past_key_values,
+                use_cache=True,
+                **gen_cfg
+            )
+            
+            session_state.past_key_values = outputs.past_key_values
+            
+            return self.model.tokenizer.decode(
+                outputs.sequences[0],
+                skip_special_tokens=True
+            )
+        finally:
+            self.watchdog.stop()
 
     async def run(self, queue):
         torch.cuda.set_device(self.gpu_state.gpu_id)
