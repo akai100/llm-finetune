@@ -1,1 +1,78 @@
+# =========================
+# Text Generation Settings
+# =========================
+
+generation:
+  # -------- 基础解码策略 --------
+  do_sample: true
+  temperature: 0.7            # 线上安全值，避免发散
+  top_p: 0.9                  # 比 top_k 稳定
+  top_k: 50                   # 防止极端 token
+  repetition_penalty: 1.05    # 中文略高一点更稳
+
+  # -------- 长度控制（非常重要） --------
+  max_new_tokens: 512         # 在线默认
+  min_new_tokens: 16
+  eos_token_id: null          # 使用 tokenizer 默认
+  pad_token_id: null
+
+  # -------- Beam（默认关闭） --------
+  num_beams: 1                # 在线一定关 beam
+  early_stopping: true
+
+  # -------- KV Cache --------
+  use_cache: true             # 必须开启
+  cache_implementation: dynamic
+  cache_max_length: 4096      # 防止 session 打爆显存
+
+  # -------- 数值稳定性 --------
+  renormalize_logits: true    # 防止 logit 爆
+  remove_invalid_values: true # 防 NaN
+
+  # -------- RAG 场景适配 --------
+  rag:
+    enabled: true
+    max_context_tokens: 2048  # RAG + prompt 总长度上限
+    truncate_strategy: tail   # 保留最新上下文
+    separator: "\n\n---\n\n"
+
+  # -------- 安全 & 限制 --------
+  stop_sequences:
+    - "</s>"
+    - "###"
+    - "<|endoftext|>"
+
+  banned_tokens:
+    - "<script>"
+    - "rm -rf"
+
+# =========================
+# Dynamic Batch Settings
+# =========================
+
+dynamic_batch:
+  enabled: true
+  max_batch_size: 8           # 单 GPU 上限
+  max_wait_ms: 20             # 延迟 / 吞吐平衡点
+  max_total_tokens: 8192      # batch 内 token 总量限制
+  drop_overflow: true         # 超限直接拒绝（Fail Fast）
+
+# =========================
+# Timeout & Watchdog
+# =========================
+
+watchdog:
+  inference_timeout_sec: 30   # 单请求最大推理时间
+  hard_kill: true             # CUDA hang 必须硬杀
+  mark_gpu_unhealthy: true
+
+# =========================
+# Logging (用于事故复盘)
+# =========================
+
+logging:
+  log_prompts: false          # 线上关，调试可开
+  log_generation_params: true
+  log_latency: true
+  log_token_usage: true
 
