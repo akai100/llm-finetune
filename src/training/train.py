@@ -1,5 +1,10 @@
 import torch
-from transformers import Trainer, TrainingArguments
+from transformers import (
+    Trainer,
+    TrainingArguments,
+    AutoModelForCausalLM,
+    AutoTokenizer
+)
 from accelerate import Accelerator
 
 from src.models.load_model import load_model
@@ -53,7 +58,6 @@ def main():
         tokenizer=tokenizer,
         callbacks=[NaNLossCallback(), WatchdogCallback(watchdog)]
     )
-                                   
 
     try:
         trainer.train(resume_from_checkpoint=cfg.resume_from)
