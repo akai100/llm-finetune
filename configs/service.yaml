@@ -1,1 +1,47 @@
+# =========================
+# Service Basic
+# =========================
+
+service:
+  name: llm-inference-service
+  host: 0.0.0.0
+  port: 8000
+  workers: 1                  # GPU 服务一般单 worker
+  log_level: info
+
+# =========================
+# API Layer
+# =========================
+
+api:
+  framework: fastapi
+  enable_streaming: true
+  max_request_size_mb: 4
+
+  timeout_sec: 60              # API 层兜底
+  reject_on_overload: true
+
+# =========================
+# Concurrency & Rate Limit
+# =========================
+
+concurrency:
+  max_inflight_requests: 128   # 全局并发上限
+  per_user_limit: 4            # 防止单用户打爆
+  queue_on_overflow: true
+
+rate_limit:
+  enabled: true
+  qps: 20
+  burst: 40
+
+# =========================
+# GPU Router (核心)
+# =========================
+
+gpu_router:
+  strategy: memory_aware       # round_robin | memory_aware
+  probe_interval_sec: 2
+
+  # 显
 
