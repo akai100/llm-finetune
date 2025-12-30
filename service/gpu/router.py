@@ -34,6 +34,17 @@ class GPURouter:
             - self.gamma * queue_length
         )
 
+    def can_accept(self, gpu, queue_length, est_batch_cost=1):
+        free, total = gpu.refresh_memory()
+        free_ratio = free / total
+        
+        return (
+            gpu.healthy and
+            free_ratio > self.min_free_ratio and
+            (gpu.active + est_batch_cost) <= gpu.max_concurrent
+        )
+
+
     def select_gpu(self):
         candidates = []
         for gpu in self.gpu_states:
@@ -41,6 +52,10 @@ class GPURouter:
                 continue
 
             q_len = queues[gpu.gpu_id].queue.qsize()
+            if not self.can_accept(gpu, q_len, est_batch_cost=1):
+                continue
+            est_batch = min(q_len + 1, 8)  # 预估 batch
+            
             s = self.score(gpu, q_len)
             candidates.append((s, gpu))
 
