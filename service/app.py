@@ -10,27 +10,45 @@ from service.model_loader import ModelService
 
 app = FastAPI()
 
-gpu_states = []
-queues = {}
-workers = {}
-
 num_gpus = torch.cuda.device_count()
-
-for gpu_id in range(num_gpus):
-    state = GPUState(gpu_id, max_concurrent=1)
-    gpu_states.append(state)
-
+gpu_states = [GPUState(i) for i in range(num_gpus)]
 router = GPURouter(gpu_states)
+session_mgr = SessionManager()
+queues = [asyncio.Queue() for _ in range(num_gpus)]
+sems = [asyncio.Semaphore(1) for _ in range(num_gpus)]
+model = ModelService("gpt2")
+
+workers = [
+    GPUWorker(gpu_states[i], model, sems[i])
+    for i in range(num_gpus)
+]
 
 @app.on_event("startup")
 async def startup_event():
-    for state in gpu_states:
-        queue = InferenceQueue(max_size=50)
-        model = ModelService("outputs/checkpoints/best")
-        sem = GPUSemaphore(max_concurrent=1)
-        worker = GPUWorker(state, model, sem)
+    for i in range(num_gpus):
+        asyncio.create_task(workers[i].run(queues[i]))
 
-        queues[state.gpu_id] = queue
-        workers[state.gpu_id] = worker
+@app.post("/chat")
+async def chat(req: dict):
+    session_id = req["session_id"]
+    prompt = req["query"]
 
-        asyncio.create_task(worker.run(queue))
+    session = session_mgr.get(session_id)
+    gpu = router.select_gpu_for_session(session)
+    if not gpu:
+        raise HTTPException(503, "No GPU available")
+
+    if not session:
+        session = session_mgr.create(session_id, gpu.gpu_id)
+
+    loop = asyncio.get_event_loop()
+    future = loop.create_future()
+
+    queues[gpu.gpu_id].put_nowait(
+        type("Req", (), {
+            "prompt": prompt,
+            "future": future
+        })()
+    )
+
+    return {"answer": await future}
