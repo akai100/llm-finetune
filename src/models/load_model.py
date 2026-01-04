@@ -1,3 +1,10 @@
+"""
+模型加载：transformers + peft
+1. 不在这里 .to(device)
+2. 不手动做 DDP
+3. 交给 acelerate
+"""
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model
