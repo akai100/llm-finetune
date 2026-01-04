@@ -1,3 +1,20 @@
+"""
+1. 真实场景
+
+（1）多卡 NCCL 通信异常
+
+（2）一个 rank crash，其它 rank 永远等待
+
+（3）任务不报错，但 GPU 100% idle
+
+2. 处理目标
+
+（1）心跳检测
+
+（2）超时自动 fail fast
+
+（4）明确报错原因（不是 “卡住了”）
+"""
 import time
 import threading
 import logging
