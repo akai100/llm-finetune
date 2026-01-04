@@ -19,6 +19,13 @@ class TrainingController:
         self.watchdog = TrainingWatchdog(config)
         self.ckpt_guard = CheckpointGuard(config)
 
+        if self.cfg.distillation.enabled:
+            self.teacher = TeacherModel(self.cfg.distillation)
+            self.distill_runner = DistillStepRunner(
+                self.model, self.teacher, self.optimizer, self.cfg
+            )
+
+
     def train(self):
         global_step = 0
         self.model.train()
@@ -29,7 +36,11 @@ class TrainingController:
                 step_start = time.time()
 
                 try:
-                    loss = self.runner.run_step(batch)
+                    if self.cfg.distillation.enabled:
+                        loss = self.distill_runner.run_step(batch)
+                    else:
+                        loss = self.runner.run_step(batch)
+
                     self.watchdog.step_ok(step_start)
 
                 except RuntimeError as e:
