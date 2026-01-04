@@ -3,7 +3,7 @@
 # =========================
 
 model:
-  name_or_path: Qwen/Qwen2.5-7B-Instruct
+  name_or_path: Qwen/Qwen3-4B
   model_type: causal_lm
   trust_remote_code: true
 

@@ -2,18 +2,18 @@
 import time
 import torch
 
-from training.step_runner import StepRunner
-from training.oom_handler import OOMHandler
-from training.watchdog import TrainingWatchdog
-from training.checkpoint_guard import CheckpointGuard
+from src.training.step_runner import StepRunner
+from src.training.oom_handler import OOMHandler
+from src.training.watchdog import TrainingWatchdog
+from src.training.checkpoint_guard import CheckpointGuard
 
-from training.distillation.distill_runner import DistillStepRunner
-from training.distillation.teacher_loader import TeacherModel
+from src.training.distillation.distill_runner import DistillStepRunner
+from src.training.distillation.teacher_loader import TeacherModel
 
-from training.pruning.pruner import StructuredPruner
-from training.pruning.schedule import PruneScheduler
+from src.training.pruning.pruner import StructuredPruner
+from src.training.pruning.schedule import PruneScheduler
 
-from training.quantization.post_quant import export_quantized_model
+from src.training.quantization.post_quant import export_quantized_model
 
 
 class TrainingController:
