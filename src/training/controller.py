@@ -24,6 +24,8 @@ class TrainingController:
             self.distill_runner = DistillStepRunner(
                 self.model, self.teacher, self.optimizer, self.cfg
             )
+        if self.cfg.compression.pruning.enabled:
+            self.pruner = StructuredPruner(self.model, self.cfg.compression)
 
 
     def train(self):
