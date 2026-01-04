@@ -12,17 +12,30 @@ fp16: true
 bf16: false
 resume_from: null
 
-distillation:
+compression:
   enabled: true
 
-  teacher:
-    model_name: Qwen/Qwen2.5-14B
-    device: cuda
-    fp16: true
-    eval_mode: true
+  distillation:
+    enabled: true
+    temperature: 2.0
+    alpha: 0.7
 
-  temperature: 2.0
-  alpha: 0.7                # KD vs hard label
+  pruning:
+    enabled: true
+    type: structured          # structured | unstructured
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+    sparsity: 0.3             # 30% 剪枝
+    schedule: linear          # linear | step
+    start_step: 1000
+    end_step: 5000
 
-  detach_teacher: true
-  cache_teacher_logits: false
+  quantization:
+    enabled: true
+    mode: post                # post | qat
+    bits: 8                   # 8bit / 4bit
+    backend: bitsandbytes     # bitsandbytes | gptq
+
