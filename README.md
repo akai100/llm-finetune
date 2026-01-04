@@ -83,3 +83,18 @@
 ## Inference Watchdog
 
 “CUDA hang 时不会报错，所以我们有 inference watchdog，超时直接 kill 进程。”
+
+## 工程设计黄金法则
+
+✅ 配置全部 YAML 化
+
+✅ 模型 / 数据 / 训练 解耦
+
+✅ accelerate 只负责分布式
+
+✅ Trainer 只负责训练逻辑
+
+✅ LoRA 只改最小模块
+
+✅ 推理参数单独维护
+
