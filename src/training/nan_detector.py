@@ -1,3 +1,13 @@
+"""
+1. 实时检测 NaN / Inf
+
+2. 自动跳过 batch
+
+3. 记录异常样本 index
+
+4. 防止污染模型
+"""
+
 import torch
 import logging
 
