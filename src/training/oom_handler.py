@@ -1,3 +1,13 @@
+"""
+1. 捕获 OOM
+
+2. 自动清理 CUDA cache
+
+3. 安全退出 or 跳过当前 step
+
+4. 保留 checkpoint，支持 resume
+"""
+
 import torch
 import logging
 import gc
