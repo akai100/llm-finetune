@@ -11,3 +11,18 @@ max_len: 2048
 fp16: true
 bf16: false
 resume_from: null
+
+distillation:
+  enabled: true
+
+  teacher:
+    model_name: Qwen/Qwen2.5-14B
+    device: cuda
+    fp16: true
+    eval_mode: true
+
+  temperature: 2.0
+  alpha: 0.7                # KD vs hard label
+
+  detach_teacher: true
+  cache_teacher_logits: false
