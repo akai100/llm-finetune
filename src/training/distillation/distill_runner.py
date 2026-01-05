@@ -1,6 +1,6 @@
 # training/distillation/distill_runner.py
 import torch
-from training.distillation.loss import distillation_loss
+from src.training.distillation.loss import distillation_loss
 
 
 class DistillStepRunner:

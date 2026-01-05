@@ -1,0 +1,76 @@
+# =========================
+# LoRA Global
+# =========================
+
+lora:
+  enabled: true
+  task_type: CAUSAL_LM
+
+# =========================
+# Target Modules
+# =========================
+
+  # 只动高价值参数，防止不稳定
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+# =========================
+# LoRA Hyperparameters
+# =========================
+
+  r: 16                        # rank，工业常用 8~32
+  lora_alpha: 32               # 通常 = 2 * r
+  lora_dropout: 0.05           # 防过拟合
+
+  bias: none                   # none | all | lora_only
+
+# =========================
+# Initialization & Stability
+# =========================
+
+  init_lora_weights: true      # 官方推荐
+  fan_in_fan_out: false        # Transformer 默认 false
+
+# =========================
+# Precision & Device
+# =========================
+
+  dtype: bf16                  # bf16 | fp16
+  device: cuda
+
+# =========================
+# Training Behavior
+# =========================
+
+  # 冻结策略
+  freeze_base_model: true
+  train_lora_only: true
+
+  # 梯度控制
+  lora_grad_clip: 1.0
+  scale_grad_by_rank: true
+
+# =========================
+# Save / Merge
+# =========================
+
+  save_strategy: adapter_only  # adapter_only | merged
+  save_steps: 500
+
+  # 训练结束是否合并
+  merge_weights_on_save: false
+
+# =========================
+# Compatibility
+# =========================
+
+  # 与蒸馏 / 剪枝 / 量化协同
+  allow_distillation: true
+  allow_pruning: true
+  allow_quantization: true
